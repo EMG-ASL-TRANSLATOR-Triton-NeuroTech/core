@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 # ==========================================
 # Format: ('path_to_csv', 'Gesture_Name')
 gesture_files = [
-    ('downsampled_emg.csv', 'Open Hand'),
-    ('downsampled_emg1.csv', 'Close Hand'),
+    ('CSV-Files/Test-Ricardo_Open-Hand.csv', 'Open Hand'),
+    ('CSV-Files/Test-Ricardo_Closed-Hand.csv', 'Close Hand'),
 ]
 
 # ==========================================
@@ -22,7 +22,7 @@ dataframes = []
 print("Loading data...")
 for filepath, gesture_name in gesture_files:
     try:
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, sep='\t')
         # Add a column to identify which gesture this data belongs to
         df['gesture'] = gesture_name
         dataframes.append(df)
@@ -65,16 +65,35 @@ umap_results = reducer.fit_transform(X_scaled)
 # ==========================================
 # 5. Visualization
 # ==========================================
-plt.figure(figsize=(10, 8))
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
 # Get unique gestures to plot them with different colors
 unique_gestures = np.unique(y)
 colors = plt.cm.tab10(np.linspace(0, 1, len(unique_gestures)))
 
+# Plot PCA results
 for i, gesture in enumerate(unique_gestures):
-    # Select points belonging to this specific gesture
     mask = y == gesture
-    plt.scatter(
+    axes[0].scatter(
+        pca_results[mask, 0],
+        pca_results[mask, 1],
+        c=[colors[i]],
+        label=gesture,
+        alpha=0.7,
+        edgecolors='w',
+        s=50
+    )
+
+axes[0].set_title("Gesture Cluster Analysis (PCA)")
+axes[0].set_xlabel("PCA Component 1")
+axes[0].set_ylabel("PCA Component 2")
+axes[0].legend(title="Gesture")
+axes[0].grid(True, linestyle='--', alpha=0.3)
+
+# Plot UMAP results
+for i, gesture in enumerate(unique_gestures):
+    mask = y == gesture
+    axes[1].scatter(
         umap_results[mask, 0],
         umap_results[mask, 1],
         c=[colors[i]],
@@ -84,10 +103,11 @@ for i, gesture in enumerate(unique_gestures):
         s=50
     )
 
-plt.title("Gesture Cluster Analysis (UMAP)")
-plt.xlabel("UMAP Component 1")
-plt.ylabel("UMAP Component 2")
-plt.legend(title="Gesture")
-plt.grid(True, linestyle='--', alpha=0.3)
+axes[1].set_title("Gesture Cluster Analysis (UMAP)")
+axes[1].set_xlabel("UMAP Component 1")
+axes[1].set_ylabel("UMAP Component 2")
+axes[1].legend(title="Gesture")
+axes[1].grid(True, linestyle='--', alpha=0.3)
+
 plt.tight_layout()
 plt.show()
