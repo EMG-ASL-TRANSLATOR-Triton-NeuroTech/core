@@ -212,7 +212,7 @@ def train_and_evaluate(
     y = y[mask].reset_index(drop=True)
     if len(valid_classes) < len(value_counts):
         print(f"\nFiltered out classes with < {min_samples_per_class} samples. Remaining: {list(valid_classes)}")
-
+    #add gridSearchCV, define the parameters like n_estimators, max_depth, min_samples_split, min_samples_leaf, and max_features
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
