@@ -1,22 +1,93 @@
 import pandas as pd
+import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler # Added for best practice
 from umap import UMAP
 import matplotlib.pyplot as plt
 
-# 1. Load your preprocessed CSV data
-data = pd.read_csv('Test-Ricardo_Closed-Hand.csv')
+# ==========================================
+# 1. CONFIGURATION: Define your files here
+# ==========================================
+# Format: ('path_to_csv', 'Gesture_Name')
+gesture_files = [
+    ('downsampled_emg.csv', 'Open Hand'),
+    ('downsampled_emg1.csv', 'Close Hand'),
+]
 
-# 2. Linear Reduction (PCA)
-# Helps you see the 'broad strokes' of your EMG signal variance
+# ==========================================
+# 2. Load and Combine Data
+# ==========================================
+dataframes = []
+
+print("Loading data...")
+for filepath, gesture_name in gesture_files:
+    try:
+        df = pd.read_csv(filepath)
+        # Add a column to identify which gesture this data belongs to
+        df['gesture'] = gesture_name
+        dataframes.append(df)
+        print(f"  Loaded {filepath} ({len(df)} samples)")
+    except FileNotFoundError:
+        print(f"  Warning: File not found - {filepath}")
+
+if not dataframes:
+    raise ValueError("No data files were loaded. Check your file paths.")
+
+# Combine all CSVs into one master DataFrame
+combined_data = pd.concat(dataframes, ignore_index=True)
+
+# Separate Features (EMG channels) from Labels (Gesture names)
+# We assume the 'gesture' column is the last one added.
+# If your CSVs have other non-EMG columns, adjust this selection.
+feature_columns = [col for col in combined_data.columns if col != 'gesture']
+X = combined_data[feature_columns].values
+y = combined_data['gesture'].values
+
+# ==========================================
+# 3. Preprocessing (Optional but Recommended)
+# ==========================================
+# EMG data often benefits from scaling before PCA/UMAP
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# ==========================================
+# 4. Dimensionality Reduction
+# ==========================================
+print("Running PCA...")
 pca = PCA(n_components=2)
-pca_results = pca.fit_transform(data)
+pca_results = pca.fit_transform(X_scaled)
 
-# 3. Non-Linear Reduction (UMAP)
-# Helps you see if 'Closed-Hand' is physically distinct from 'Open-Hand'
-reducer = UMAP(n_neighbors=15, min_dist=0.1)
-umap_results = reducer.fit_transform(data)
+print("Running UMAP...")
+# UMAP is non-deterministic; set random_state for reproducibility
+reducer = UMAP(n_neighbors=15, min_dist=0.1, random_state=42)
+umap_results = reducer.fit_transform(X_scaled)
 
-# 4. Visualization
-plt.scatter(umap_results[:, 0], umap_results[:, 1], c=labels)
-plt.title("Gesture Cluster Analysis")
+# ==========================================
+# 5. Visualization
+# ==========================================
+plt.figure(figsize=(10, 8))
+
+# Get unique gestures to plot them with different colors
+unique_gestures = np.unique(y)
+colors = plt.cm.tab10(np.linspace(0, 1, len(unique_gestures)))
+
+for i, gesture in enumerate(unique_gestures):
+    # Select points belonging to this specific gesture
+    mask = y == gesture
+    plt.scatter(
+        umap_results[mask, 0],
+        umap_results[mask, 1],
+        c=[colors[i]],
+        label=gesture,
+        alpha=0.7,
+        edgecolors='w',
+        s=50
+    )
+
+plt.title("Gesture Cluster Analysis (UMAP)")
+plt.xlabel("UMAP Component 1")
+plt.ylabel("UMAP Component 2")
+plt.legend(title="Gesture")
+plt.grid(True, linestyle='--', alpha=0.3)
+plt.tight_layout()
 plt.show()
