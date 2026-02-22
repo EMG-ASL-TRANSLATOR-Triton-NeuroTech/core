@@ -1,0 +1,10 @@
+# might not be complete, add more if needed
+
+mindrove
+psychopy
+numpy
+pandas
+scikit-learn
+scipy
+umap-learn
+matplotlib
