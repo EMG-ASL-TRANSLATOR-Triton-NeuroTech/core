@@ -3,27 +3,17 @@ EMG Classifier - Load MindRove EMG data and verify with plotting.
 Supports resampling for datasets with different sampling rates (e.g., Ninapro 200Hz).
 """
 
-<<<<<<< HEAD
 from pathlib import Path
 import glob
-=======
-import glob
-from pathlib import Path
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, filtfilt, iirnotch, resample
-from scipy.stats import mode as scipy_mode
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
-<<<<<<< HEAD
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
 from sklearn.preprocessing import StandardScaler
-=======
-from sklearn.model_selection import train_test_split
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
 
 
 # --- Configuration ---
@@ -151,7 +141,6 @@ def plot_raw_vs_filtered(
 
 
 def extract_features(
-<<<<<<< HEAD
     df: pd.DataFrame,
     fs: float = MINDROVE_SAMPLING_RATE,
     window_ms: float = 250.0,
@@ -218,52 +207,6 @@ def normalize_and_encode(features_df: pd.DataFrame) -> pd.DataFrame:
     scaled_df = pd.concat(parts, ignore_index=True)
     out = pd.get_dummies(scaled_df, columns=[subject_col])
     return out
-=======
-    filtered_data: np.ndarray,
-    labels: np.ndarray,
-    fs: float = 200.0,
-    window_ms: float = 200.0,
-) -> pd.DataFrame:
-    """
-    Slice filtered data into windows and extract RMS, VAR, MAV per channel.
-    
-    Args:
-        filtered_data: 2D array (samples, channels) or 1D (samples,).
-        labels: 1D array of labels (e.g. 'Fist', 'Rest') for each sample.
-        fs: Sampling rate in Hz.
-        window_ms: Window length in milliseconds.
-    
-    Returns:
-        DataFrame: each row is a window with RMS, VAR, MAV per channel + Label.
-    """
-    if filtered_data.ndim == 1:
-        filtered_data = filtered_data[:, np.newaxis]
-    n_samples, n_channels = filtered_data.shape
-    window_samples = int(window_ms / 1000 * fs)
-    if window_samples < 1:
-        window_samples = 1
-
-    rows = []
-    for start in range(0, n_samples - window_samples + 1, window_samples):
-        end = start + window_samples
-        window = filtered_data[start:end]
-        window_labels = labels[start:end]
-        labels_rounded = np.round(np.asarray(window_labels)).astype(int)
-        label = int(scipy_mode(labels_rounded, keepdims=False).mode)
-
-        feats = {}
-        for c in range(n_channels):
-            x = window[:, c]
-            feats[f"CH{c+1}_RMS"] = np.sqrt(np.mean(x**2))
-            feats[f"CH{c+1}_VAR"] = np.var(x)
-            feats[f"CH{c+1}_MAV"] = np.mean(np.abs(x))
-        feats["Target"] = label
-        rows.append(feats)
-
-    df = pd.DataFrame(rows)
-    df["Target"] = df["Target"].astype(int)
-    return df
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
 
 
 def train_and_evaluate(
@@ -291,16 +234,11 @@ def train_and_evaluate(
     y = y[mask].reset_index(drop=True)
     if len(valid_classes) < len(value_counts):
         print(f"\nFiltered out classes with < {min_samples_per_class} samples. Remaining: {list(valid_classes)}")
-<<<<<<< HEAD
 
-=======
-    #add gridSearchCV, define the parameters like n_estimators, max_depth, min_samples_split, min_samples_leaf, and max_features
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
 
-<<<<<<< HEAD
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
     param_grid = {
         "n_estimators": [50, 100, 200],
@@ -319,19 +257,11 @@ def train_and_evaluate(
     model = grid_search.best_estimator_
     y_pred = model.predict(X_test)
     print("Final global accuracy (test set):", accuracy_score(y_test, y_pred))
-=======
-    model = RandomForestClassifier(random_state=random_state)
-    model.fit(X_train, y_train)
-
-    y_pred = model.predict(X_test)
-    print("Accuracy Score:", accuracy_score(y_test, y_pred))
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
     cm = confusion_matrix(y_test, y_pred, labels=model.classes_)
     cm_df = pd.DataFrame(cm, index=model.classes_, columns=model.classes_)
     print("\nConfusion Matrix (rows = true, cols = predicted):")
     print(cm_df)
 
-<<<<<<< HEAD
     # Feature importance: top 10 horizontal bar chart
     importance_df = pd.DataFrame(
         {"feature": X_train.columns, "importance": model.feature_importances_}
@@ -348,8 +278,6 @@ def train_and_evaluate(
     plt.savefig("feature_importance.png")
     plt.show()
 
-=======
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
     return model
 
 
@@ -381,7 +309,6 @@ if __name__ == "__main__":
         df = load_master_dataframe(DATASET_ROOT)
     else:
         df = load_emg_data(CSV_PATH)
-<<<<<<< HEAD
         df["Subject"] = "single"
         print(f"Loaded {len(df)} samples, {len(df.columns)} columns: {list(df.columns)}")
 
@@ -410,21 +337,3 @@ if __name__ == "__main__":
     # 4. Train global model (GridSearchCV), print accuracy and confusion matrix
     model = train_and_evaluate(features_df)
     print("Global model training complete.")
-    
-=======
-        print(f"Loaded {len(df)} samples, {len(df.columns)} columns: {list(df.columns)}")
-    plot_channel_1_first_n_seconds(df, seconds=5)
-
-    # Preprocess and compare raw vs filtered (first 1000 samples)
-    raw_ch1 = df["CH1"].values
-    filtered_ch1 = preprocess_signals(raw_ch1)
-    plot_raw_vs_filtered(raw_ch1, filtered_ch1, n_samples=1000)
-
-    # Full pipeline: preprocess all channels -> extract features -> train
-    channel_cols = [f"CH{i}" for i in range(1, 9)]
-    filtered = preprocess_signals(df[channel_cols].values)
-    features_df = extract_features(
-        filtered, df["Target"].values, fs=MINDROVE_SAMPLING_RATE, window_ms=200
-    )
-    train_and_evaluate(features_df)
->>>>>>> 1a215d876db0a88ed0a7853f2c2a165191dc8452
