@@ -3,8 +3,8 @@ EMG Classifier - Load MindRove EMG data and verify with plotting.
 Supports resampling for datasets with different sampling rates (e.g., Ninapro 200Hz).
 """
 
-from pathlib import Path
 import glob
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -17,8 +17,9 @@ from sklearn.preprocessing import StandardScaler
 
 
 # --- Configuration ---
-CSV_PATH = "dataset_emg_mindrove.csv"  # Update this to your CSV file path
-DATASET_ROOT = "DATASET EMG MINDROVE"  # Folder with subject subfolders (AYU, DANIEL, etc.)
+BASE_DIR = Path(__file__).resolve().parent
+CSV_PATH = BASE_DIR / "DATASET EMG MINDROVE" / "FORMATTED" / "subjek_FORMATTED.csv"
+DATASET_ROOT = BASE_DIR / "DATASET EMG MINDROVE" / "FORMATTED" / "by_gesture"
 MINDROVE_SAMPLING_RATE = 500  # Hz
 
 
@@ -26,8 +27,9 @@ def load_master_dataframe(dataset_root: str) -> pd.DataFrame:
     """
     Find all .csv files recursively, load each, add Subject from folder name, concatenate.
     """
-    pattern = str(Path(dataset_root) / "**" / "*.csv")
-    csv_files = glob.glob(pattern)
+    root = Path(dataset_root)
+    # Load only direct CSVs from the selected dataset folder.
+    csv_files = [str(p) for p in root.glob("*.csv")]
     if not csv_files:
         raise FileNotFoundError(f"No .csv files found under {dataset_root}")
 
