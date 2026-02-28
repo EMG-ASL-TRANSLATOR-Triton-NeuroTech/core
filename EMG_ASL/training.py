@@ -94,8 +94,8 @@ def main():
     Configuration here, change the parameters for different cases
     Change batch size/epoch for different learning scenarios
     """
-    DATA_DIR = "./emg_data"
-    NUM_CLASSES = 5
+    DATA_DIR = "emg_data"
+    NUM_CLASSES = 2
     BATCH_SIZE = 8
     NUM_EPOCHS = 100
     LR = 0.001
