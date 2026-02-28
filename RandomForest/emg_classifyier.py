@@ -214,7 +214,7 @@ def normalize_and_encode(features_df: pd.DataFrame) -> pd.DataFrame:
 def train_and_evaluate(
     features_df: pd.DataFrame,
     label_col: str = "Target",
-    test_size: float = 0.2,
+    test_size: float = 0.8,
     random_state: int = 42,
     min_samples_per_class: int = 10,
 ) -> RandomForestClassifier:
