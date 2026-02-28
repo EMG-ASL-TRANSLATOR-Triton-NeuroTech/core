@@ -1,0 +1,152 @@
+{
+  "default": {
+    "name": "Default Configuration - Ricardo's Test Data",
+    "description": "Open Hand vs Closed Hand gestures from Ricardo",
+    "gestures": [
+      {
+        "file": "CSV-Files/Test-Ricardo_Open-Hand.csv",
+        "label": "Open Hand"
+      },
+      {
+        "file": "CSV-Files/Test-Ricardo_Closed-Hand.csv",
+        "label": "Close Hand"
+      }
+    ]
+  },
+  "ricardo_only": {
+    "name": "Ricardo Only - Mixed Data",
+    "description": "All Ricardo's test data combined",
+    "gestures": [
+      {
+        "file": "CSV-Files/Test-Ricardo.csv",
+        "label": "Ricardo Mixed"
+      }
+    ]
+  },
+  "all_subjects": {
+    "name": "All Subjects Comparison",
+    "description": "Comparing data from Ricardo and Sirisha",
+    "gestures": [
+      {
+        "file": "CSV-Files/Test-Ricardo.csv",
+        "label": "Ricardo"
+      },
+      {
+        "file": "CSV-Files/Test-Sirisha.csv",
+        "label": "Sirisha"
+      }
+    ]
+  },
+  "emc_asl": {
+    "name": "EMG ASL Test Data",
+    "description": "Using EMG_ASL folder test data",
+    "gestures": [
+      {
+        "file": "EMG_ASL/CSV/Test-Ricardo_Open-Hand.csv",
+        "label": "Open Hand"
+      },
+      {
+        "file": "EMG_ASL/CSV/Test-Ricardo_Closed-Hand.csv",
+        "label": "Close Hand"
+      }
+    ]
+  },
+  "random_forest_data": {
+    "name": "Random Forest Dataset",
+    "description": "Multiple subjects from Random Forest dataset",
+    "gestures": [
+      {
+        "file": "RandomForest/DATASET EMG MINDROVE/AYU/subjek_AYU1.csv",
+        "label": "AYU - Subject 1"
+      },
+      {
+        "file": "RandomForest/DATASET EMG MINDROVE/DANIEL/subjek_DANIEL1.csv",
+        "label": "DANIEL - Subject 1"
+      },
+      {
+        "file": "RandomForest/DATASET EMG MINDROVE/LINTANG/subjek_Lintang1.csv",
+        "label": "LINTANG - Subject 1"
+      }
+    ]
+  },
+  "finger_tests": {
+    "name": "Individual Finger Tests",
+    "description": "EMG patterns for individual finger movements - Index, Ring, and Pinky",
+    "gestures": [
+      {
+        "file": "CSV-Files/index_finger.csv",
+        "label": "Index Finger"
+      },
+      {
+        "file": "CSV-Files/ring_finger.csv",
+        "label": "Ring Finger"
+      },
+      {
+        "file": "CSV-Files/pinky_finger.csv",
+        "label": "Pinky Finger"
+      }
+    ]
+  },
+  "hand_variants": {
+    "name": "Hand Position Variants",
+    "description": "Different hand configurations - Closed Hand, Index Finger, Ring Finger, Pinky Finger",
+    "gestures": [
+      {
+        "file": "CSV-Files/closed_hand.csv",
+        "label": "Closed Hand"
+      },
+      {
+        "file": "CSV-Files/index_finger.csv",
+        "label": "Index Finger"
+      },
+      {
+        "file": "CSV-Files/ring_finger.csv",
+        "label": "Ring Finger"
+      },
+      {
+        "file": "CSV-Files/pinky_finger.csv",
+        "label": "Pinky Finger"
+      }
+    ]
+  },
+  "all_gestures": {
+    "name": "All Gestures Combined",
+    "description": "Complete gesture set - Open Hand, Closed Hand, and all finger tests",
+    "gestures": [
+      {
+        "file": "CSV-Files/Test-Ricardo_Open-Hand.csv",
+        "label": "Open Hand"
+      },
+      {
+        "file": "CSV-Files/closed_hand.csv",
+        "label": "Closed Hand"
+      },
+      {
+        "file": "CSV-Files/index_finger.csv",
+        "label": "Index Finger"
+      },
+      {
+        "file": "CSV-Files/ring_finger.csv",
+        "label": "Ring Finger"
+      },
+      {
+        "file": "CSV-Files/pinky_finger.csv",
+        "label": "Pinky Finger"
+      }
+    ]
+  },
+  "subject_comparison": {
+    "name": "Subject Comparison - Closed Hand",
+    "description": "Comparing closed hand EMG patterns between Ricardo and Mohak",
+    "gestures": [
+      {
+        "file": "CSV-Files/Test-Ricardo_Closed-Hand.csv",
+        "label": "Ricardo - Closed Hand"
+      },
+      {
+        "file": "CSV-Files/Test-Mohak_Closed-Hand.csv",
+        "label": "Mohak - Closed Hand"
+      }
+    ]
+  }
+}

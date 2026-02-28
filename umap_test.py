@@ -1,18 +1,52 @@
 import pandas as pd
 import numpy as np
+import argparse
+import json
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler # Added for best practice
 from umap import UMAP
 import matplotlib.pyplot as plt
 
 # ==========================================
-# 1. CONFIGURATION: Define your files here
+# 1. COMMAND-LINE ARGUMENT PARSING
 # ==========================================
-# Format: ('path_to_csv', 'Gesture_Name')
-gesture_files = [
-    ('CSV-Files/Test-Ricardo_Open-Hand.csv', 'Open Hand'),
-    ('CSV-Files/Test-Ricardo_Closed-Hand.csv', 'Close Hand'),
-]
+parser = argparse.ArgumentParser(description='EMG Data Visualization with PCA and UMAP')
+parser.add_argument('--config', type=str, help='Path to JSON config file containing file paths and labels')
+parser.add_argument('--config-key', type=str, help='Configuration key inside JSON config file')
+parser.add_argument('--files', nargs='+', type=str, help='File paths (space-separated)')
+parser.add_argument('--labels', nargs='+', type=str, help='Labels for each file (space-separated, must match number of files)')
+args = parser.parse_args()
+
+# Determine gesture files from arguments or config
+gesture_files = []
+
+if args.config:
+    # Load from config file
+    with open(args.config, 'r') as f:
+        loaded_config = json.load(f)
+
+    if args.config_key:
+        selected_config = loaded_config.get(args.config_key)
+        if not selected_config:
+            raise ValueError(f"Configuration key '{args.config_key}' not found in {args.config}")
+        gesture_files = [(item['file'], item['label']) for item in selected_config.get('gestures', [])]
+        print(f"Loaded configuration '{args.config_key}' from: {args.config}")
+    else:
+        gesture_files = [(item['file'], item['label']) for item in loaded_config.get('gestures', [])]
+        print(f"Loaded configuration from: {args.config}")
+elif args.files and args.labels:
+    # Load from command-line arguments
+    if len(args.files) != len(args.labels):
+        raise ValueError("Number of files must match number of labels")
+    gesture_files = list(zip(args.files, args.labels))
+    print("Loaded configuration from command-line arguments")
+else:
+    # Default configuration
+    gesture_files = [
+        ('CSV-Files/Test-Ricardo_Open-Hand.csv', 'Open Hand'),
+        ('CSV-Files/Test-Ricardo_Closed-Hand.csv', 'Close Hand'),
+    ]
+    print("Using default configuration")
 
 # ==========================================
 # 2. Load and Combine Data
@@ -20,6 +54,7 @@ gesture_files = [
 dataframes = []
 
 print("Loading data...")
+print(f"Number of gestures to load: {len(gesture_files)}")
 for filepath, gesture_name in gesture_files:
     try:
         df = pd.read_csv(filepath, sep='\t')
