@@ -71,6 +71,18 @@ This project analyzes EMG data from various hand gestures and finger movements u
 
 ## Dataset Files
 
+### File Specifications
+
+- Duration: 5 seconds
+- Samples: 5000 samples (1kHz sample rate)
+- Content: Filtered channels directly from MindRove hardware
+- Structure: Columns at the top only (no metadata or extra information)
+- Delimiter: Tab-separated (\t), not comma-separated
+
+#### Naming Convention
+- Files must follow the format: gesture_sampleN.csv
+- Example: `gesture1_sample1.csv`
+
 ### Finger Test Data (CSV-Files/)
 - `index_finger.csv` (9.0 MB)
 - `ring_finger.csv` (23 MB)
