@@ -168,7 +168,8 @@ def extract_features(
         data = group[channel_cols].values
         targets = group[target_col].values
         n_samples = len(data)
-        for start in range(0, n_samples - window_samples + 1, window_samples):
+        stride_samples = int(0.05 * fs)  # 50 ms stride
+        for start in range(0, n_samples - window_samples + 1, stride_samples):
             end = start + window_samples
             window = data[start:end]
             window_targets = targets[start:end]

@@ -41,22 +41,22 @@ python3 RandomForest/emg_classifyier.py
 
 ## Current Result (Latest Local Run)
 
-- Dataset loaded: `296,592` rows
+- Dataset loaded: `327,092` rows
 - Classes used in training (after feature extraction): `1..8`
-- Final test accuracy: `0.7907` (79.07%)
+- Final test accuracy: `0.9667` (96.67%)
 
 Confusion matrix from the same run:
 
 ```text
-     1   2   3   4   5   6   7  8
-1  177   4   2   6   3   0   0  2
-2    6  20   0   0   0   0   0  3
-3    4   0  30   7   0   0   0  0
-4   14   0   2  89   2   0   0  0
-5    9   0   2  13  28   0   0  0
-6    4   2   0   0   0  10   1  1
-7    0   0   0   0   0   2  14  0
-8    2   8   0   0   0   0   0  6
+     1    2    3    4    5   6   7    8
+1  938    0    2   18   10   0   0    0
+2    0  140    0    0    1   0   0    1
+3    5    0  184   15    0   0   0    0
+4   18    0    3  515    0   0   0    0
+5   13    1    0    0  247   0   0    0
+6    0    0    0    0    0  92   0    0
+7    0    0    0    0    0   0  81    0
+8    0    0    0    0    0   0   0  325
 ```
 
 ## Notes

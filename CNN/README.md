@@ -68,10 +68,23 @@ The CNN expects an input tensor of shape **(4, 13, 13)** (Channels × Height × 
 3.  **Classifier:**
     - Fully Connected layers (64*3*3 → 128 → Num Classes).
     - Includes Dropout (0.5) for regularization.
+  
+**SoftSign** is tested to be the optimized activation function for our dataset, as it increases
+the attention to data with lower values, and reduces attention to data with higher values 
 
 ## Output Models
 
 Upon completion, `training.py` saves two models in the parent directory:
 - **`best_emg_model.pth`**: Weights from the epoch with the highest validation accuracy.
 - **`emg_gesture_model_final.pth`**: Weights from the final epoch.
+
+## Current Accuracy
+Training: 100%
+Validation: 57%
+
+## Areas of Improvements
+Requires more training data to reduce the issue of model overfitting to existing datasets. 
+
+
+
 
