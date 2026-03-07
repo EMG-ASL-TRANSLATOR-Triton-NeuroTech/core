@@ -63,7 +63,7 @@ The CNN expects an input tensor of shape **(4, 13, 13)** (Channels × Height × 
 
 1.  **Input:** 4 Channels, 13x13 spatial dimensions (derived from 169 time steps).
 2.  **Feature Extractor:**
-    - 3 Convolutional Blocks (Conv2d + BatchNorm + ReLU + MaxPool).
+    - 3 Convolutional Blocks (Conv2d + BatchNorm + SoftSign + MaxPool).
     - Channel progression: 4 → 16 → 32 → 64.
 3.  **Classifier:**
     - Fully Connected layers (64*3*3 → 128 → Num Classes).
@@ -74,3 +74,4 @@ The CNN expects an input tensor of shape **(4, 13, 13)** (Channels × Height × 
 Upon completion, `training.py` saves two models in the parent directory:
 - **`best_emg_model.pth`**: Weights from the epoch with the highest validation accuracy.
 - **`emg_gesture_model_final.pth`**: Weights from the final epoch.
+
