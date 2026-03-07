@@ -62,17 +62,17 @@ class EMGNet(nn.Module):
             # Conv1: (4,13,13) → (16,6,6)
             nn.Conv2d(4, 16, 3, padding=1),
             nn.BatchNorm2d(16),
-            nn.ReLU(),
+            nn.Softsign(),
             nn.MaxPool2d(2),
             # Conv2: (16,6,6) → (32,3,3)
             nn.Conv2d(16, 32, 3, padding=1),
             nn.BatchNorm2d(32),
-            nn.ReLU(),
+            nn.Softsign(),
             nn.MaxPool2d(2),
             # Conv3: (32,3,3) → (64,3,3)
             nn.Conv2d(32, 64, 3, padding=1),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            nn.Softsign(),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
