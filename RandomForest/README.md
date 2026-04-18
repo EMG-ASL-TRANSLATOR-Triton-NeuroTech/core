@@ -15,6 +15,12 @@ This folder contains the RandomForest training workflow for EMG gesture classifi
   - Loads the formatted `by_gesture` dataset.
   - Filters/signals -> extracts windowed features -> trains RandomForest (with GridSearchCV).
   - Prints accuracy + confusion matrix and saves `feature_importance.png`.
+  - Uses random window splits, so its reported accuracy is optimistic and should be treated as exploratory only.
+
+- `train_from_mindrove.py`
+  - Reads per-trial MindRove files directly from `../CSV-Files/<gesture>/`.
+  - Extracts EMG features per trial and evaluates with grouped splits so a trial never appears in both train and test.
+  - Saves a deployable model bundle under `models/mindrove_rf.joblib`.
 
 - `old_emg_classifier`
   - Older classifier version kept for comparison/reference.
@@ -39,7 +45,13 @@ python3 RandomForest/prepare_emg_datasets.py
 python3 RandomForest/emg_classifyier.py
 ```
 
-## Current Result (Latest Local Run)
+Recommended for honest MindRove evaluation:
+
+```bash
+python3 RandomForest/train_from_mindrove.py
+```
+
+## Current Result (Legacy Window-Split Run)
 
 - Dataset loaded: `327,092` rows
 - Classes used in training (after feature extraction): `1..8`
@@ -63,3 +75,4 @@ Confusion matrix from the same run:
 
 - Accuracy depends on dataset balance and feature windowing.
 - If you add new gesture files under `CSV-Files`, rerun `prepare_emg_datasets.py` before training again.
+- For real performance estimates, prefer `train_from_mindrove.py` because it evaluates by trial group instead of random overlapping windows.

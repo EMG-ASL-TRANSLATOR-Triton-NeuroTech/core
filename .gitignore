@@ -1,1 +1,7 @@
 .venv/
+__pycache__/
+.pycache/
+.psychopy3/
+tmp_mindrove_trials/
+mindrove_sessions/
+RandomForest/models/
