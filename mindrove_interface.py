@@ -160,9 +160,13 @@ def split_trials_from_dataframe(df, session_id, output_root=TRAINING_ROOT):
     saved_paths = []
     trial_counts = {gesture["slug"]: 0 for gesture in GESTURES}
 
+    # Identify the timestamp column name if it exists
+    ts_col = "Timestamp" if "Timestamp" in df.columns else None
+
     for current, nxt in zip(events, events[1:]):
         current_marker = current["marker"]
         next_marker = nxt["marker"]
+
         if current_marker not in MARKER_TO_SLUG or next_marker != REST_MARKER:
             continue
 
@@ -185,7 +189,36 @@ def split_trials_from_dataframe(df, session_id, output_root=TRAINING_ROOT):
 
         gesture_dir = output_root / slug
         gesture_dir.mkdir(parents=True, exist_ok=True)
-        out_path = gesture_dir / f"{session_id}_{slug}_trial{trial_counts[slug]:02d}.csv"
+
+        # Generate timestamp-based filename
+        # Fallback to session_id if timestamp extraction fails
+        time_str = session_id
+
+        if ts_col and ts_col in trial_df.columns:
+            try:
+                # Get the first valid timestamp from the trial
+                ts_series = trial_df[ts_col].dropna()
+                if not ts_series.empty:
+                    ts_val = float(ts_series.iloc[0])
+
+                    # Convert to datetime
+                    # MindRove timestamps are usually Unix epoch (seconds)
+                    # If value is very large (> 1e12), assume milliseconds
+                    if ts_val > 1e12:
+                        ts_val /= 1000.0
+
+                    dt_obj = datetime.fromtimestamp(ts_val)
+                    # Format: YYYYMMDD_HHMMSS_milliseconds
+                    # Using milliseconds to ensure unique filenames if trials are close in time
+                    time_str = dt_obj.strftime("%Y%m%d_%H%M%S_%f")[:-3]
+            except Exception:
+                pass  # Keep fallback session_id if conversion fails
+
+        # Filename: gesture_type_timestamp.csv
+        # Example: closed-hand_20260411_130301_123.csv
+        out_filename = f"{slug}_{time_str}.csv"
+        out_path = gesture_dir / out_filename
+
         trial_df.to_csv(out_path, sep="\t", index=False)
         saved_paths.append(out_path)
 
