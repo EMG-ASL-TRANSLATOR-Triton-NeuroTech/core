@@ -1,7 +1,8 @@
 # might not be complete, add more if needed
 
 mindrove
-psychopy
+# PsychoPy from PyPI currently supports Python < 3.12.
+psychopy; python_version < "3.12"
 numpy
 pandas
 scikit-learn

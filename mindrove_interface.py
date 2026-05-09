@@ -9,6 +9,13 @@ import numpy as np
 import pandas as pd
 
 from mindrove.board_shim import BoardIds, BoardShim, MindRoveInputParams
+from RandomForest.train_from_mindrove import (
+    ID_TO_LABEL,
+    STRIDE_MS,
+    WINDOW_MS,
+    predict_trial_dataframe,
+    train_model_with_legacy_and_calibration,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -21,6 +28,13 @@ TRIALS_PER_GESTURE = 3
 RECORDING_DURATION = 3.0
 REST_DURATION = 2.0
 SAMPLE_RATE_HZ = 500
+CALIBRATION_DURATION = 5.0
+CALIBRATION_READY_DURATION = 3.0
+PREDICTION_DURATION = 2.0
+PREDICTION_REPETITIONS = 2
+CALIBRATION_ROOT = TRAINING_ROOT / "calibration"
+CALIBRATED_MODEL_PATH = BASE_DIR / "RandomForest" / "models" / "mindrove_rf_calibrated.joblib"
+CALIBRATION_REPORT_PATH = BASE_DIR / "RandomForest" / "models" / "mindrove_calibration_report.json"
 
 GESTURES = [
     {"cue": "Close", "slug": "closed-hand", "marker": 2.0, "image": "close.png"},
@@ -225,6 +239,156 @@ def split_trials_from_dataframe(df, session_id, output_root=TRAINING_ROOT):
     return saved_paths, trial_counts
 
 
+def _capture_single_trial_dataframe(
+    board,
+    win,
+    fixation,
+    message,
+    stim,
+    cue_text,
+    action_duration,
+    prep_duration,
+    marker_value,
+    rest_duration,
+):
+    try:
+        board.get_board_data()
+    except Exception:
+        pass
+
+    message.text = f"Get Ready: {cue_text}"
+    message.pos = (0, 0)
+    message.draw()
+    win.flip()
+    from psychopy import core
+
+    core.wait(prep_duration)
+
+    fixation.draw()
+    win.flip()
+    core.wait(0.3)
+
+    message.text = f"Make Sign: {cue_text}"
+    if stim is not None:
+        message.pos = (0, -7)
+        stim.draw()
+    else:
+        message.pos = (0, 0)
+    message.draw()
+    win.flip()
+
+    board.insert_marker(marker_value)
+    core.wait(action_duration)
+
+    message.text = "Rest"
+    message.pos = (0, 0)
+    message.draw()
+    win.flip()
+    board.insert_marker(REST_MARKER)
+    core.wait(rest_duration)
+
+    trial_data = board.get_board_data()
+    return _build_labeled_dataframe(trial_data, board)
+
+
+def _extract_trial_by_marker(df, marker_value):
+    marker_col, events = _extract_marker_events(df)
+    for current, nxt in zip(events, events[1:]):
+        if current["marker"] == marker_value and nxt["marker"] == REST_MARKER:
+            start_idx = int(current["index"])
+            end_idx = int(nxt["index"])
+            if end_idx > start_idx:
+                trial_df = df.iloc[start_idx:end_idx].copy()
+                trial_df["MarkerColumn"] = marker_col
+                return trial_df
+    raise RuntimeError("Could not extract a valid trial segment from captured data.")
+
+
+def run_calibration_phase(board, win, fixation, message, stim_images, marker_map):
+    calibration_session = datetime.now().strftime("calibration_%Y%m%d_%H%M%S")
+    calibration_paths = []
+
+    print("\n=== Calibration Phase ===")
+    print("Recording 5 seconds for each gesture with 3 seconds prep before each trial.")
+
+    for gesture in GESTURES:
+        cue = gesture["cue"]
+        slug = gesture["slug"]
+        marker_value = marker_map[cue]
+        trial_df = _capture_single_trial_dataframe(
+            board=board,
+            win=win,
+            fixation=fixation,
+            message=message,
+            stim=stim_images.get(cue),
+            cue_text=cue,
+            action_duration=CALIBRATION_DURATION,
+            prep_duration=CALIBRATION_READY_DURATION,
+            marker_value=marker_value,
+            rest_duration=REST_DURATION,
+        )
+
+        saved_paths, _ = split_trials_from_dataframe(
+            trial_df,
+            session_id=calibration_session,
+            output_root=CALIBRATION_ROOT,
+        )
+        if not saved_paths:
+            raise RuntimeError(f"Calibration trial for {cue} was not saved.")
+
+        newest = max(saved_paths, key=lambda p: p.stat().st_mtime)
+        calibration_paths.append(newest)
+        print(f"Calibration saved for {cue}: {newest}")
+
+    return calibration_paths
+
+
+def run_prediction_phase(board, win, fixation, message, stim_images, marker_map, model, feature_columns):
+    print("\n=== Prediction Phase ===")
+    print("Now perform each gesture twice for 2 seconds. The model will predict each attempt.")
+
+    prediction_results = []
+    ordered_gestures = [gesture for gesture in GESTURES for _ in range(PREDICTION_REPETITIONS)]
+
+    for gesture in ordered_gestures:
+        cue = gesture["cue"]
+        slug = gesture["slug"]
+        marker_value = marker_map[cue]
+
+        trial_df = _capture_single_trial_dataframe(
+            board=board,
+            win=win,
+            fixation=fixation,
+            message=message,
+            stim=stim_images.get(cue),
+            cue_text=cue,
+            action_duration=PREDICTION_DURATION,
+            prep_duration=CALIBRATION_READY_DURATION,
+            marker_value=marker_value,
+            rest_duration=REST_DURATION,
+        )
+        extracted_trial = _extract_trial_by_marker(trial_df, marker_value)
+        pred_id, pred_label, confidence = predict_trial_dataframe(model, feature_columns, extracted_trial)
+        is_correct = pred_label == slug
+        prediction_results.append(
+            {
+                "true_label": slug,
+                "pred_label": pred_label,
+                "pred_id": pred_id,
+                "confidence": confidence,
+                "correct": is_correct,
+            }
+        )
+        print(
+            f"Expected: {slug:12s} | Predicted: {pred_label:12s} | "
+            f"Confidence: {confidence:.2f} | Correct: {is_correct}"
+        )
+
+    accuracy = sum(1 for item in prediction_results if item["correct"]) / max(1, len(prediction_results))
+    print(f"\nPrediction phase accuracy: {accuracy:.4f}")
+    return prediction_results, accuracy
+
+
 def save_session_outputs(df, board, session_id, experiment_sequence):
     session_dir = SESSION_ROOT / session_id
     session_dir.mkdir(parents=True, exist_ok=True)
@@ -304,8 +468,6 @@ def initialize_board():
 def main():
     from psychopy import core, event, visual
 
-    experiment_sequence = [gesture["cue"] for gesture in GESTURES] * TRIALS_PER_GESTURE
-    np.random.shuffle(experiment_sequence)
     marker_map = {"Rest": REST_MARKER, **{gesture["cue"]: gesture["marker"] for gesture in GESTURES}}
     session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -330,39 +492,68 @@ def main():
         board = initialize_board()
         time.sleep(2)
 
-        for trial_stimulus in experiment_sequence:
-            fixation.draw()
-            win.flip()
-            core.wait(0.5)
+        calibration_paths = run_calibration_phase(
+            board=board,
+            win=win,
+            fixation=fixation,
+            message=message,
+            stim_images=stim_images,
+            marker_map=marker_map,
+        )
 
-            message.text = f"Make Sign: {trial_stimulus}"
-            if stim_images.get(trial_stimulus) is not None:
-                message.pos = (0, -7)
-                stim_images[trial_stimulus].draw()
-            else:
-                message.pos = (0, 0)
+        model, feature_columns, calibration_report = train_model_with_legacy_and_calibration(
+            input_root=TRAINING_ROOT,
+            calibration_paths=calibration_paths,
+            model_out=CALIBRATED_MODEL_PATH,
+            window_ms=WINDOW_MS,
+            stride_ms=STRIDE_MS,
+        )
 
-            message.draw()
-            win.flip()
+        report_payload = {
+            "session_id": session_id,
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "legacy_total_files": calibration_report["legacy_total_files"],
+            "legacy_train_files": calibration_report["legacy_train_files"],
+            "legacy_validation_files": calibration_report["legacy_validation_files"],
+            "calibration_files": calibration_report["calibration_files"],
+            "selected_params": calibration_report["selected_params"],
+            "pre_adaptation_window_accuracy": calibration_report["pre_adaptation_window_accuracy"],
+            "post_adaptation_window_accuracy": calibration_report["post_adaptation_window_accuracy"],
+            "post_adaptation_trial_accuracy": calibration_report["post_adaptation_trial_accuracy"],
+            "calibration_paths": [str(path) for path in calibration_paths],
+            "model_path": str(CALIBRATED_MODEL_PATH),
+        }
+        CALIBRATION_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        CALIBRATION_REPORT_PATH.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+        print(f"Calibration report saved: {CALIBRATION_REPORT_PATH}")
 
-            if board:
-                board.insert_marker(marker_map[trial_stimulus])
+        prediction_results, prediction_accuracy = run_prediction_phase(
+            board=board,
+            win=win,
+            fixation=fixation,
+            message=message,
+            stim_images=stim_images,
+            marker_map=marker_map,
+            model=model,
+            feature_columns=feature_columns,
+        )
+        print(f"Final real-time prediction accuracy: {prediction_accuracy:.4f}")
 
-            core.wait(RECORDING_DURATION)
-
-            message.text = "Rest"
-            message.pos = (0, 0)
-            message.draw()
-            win.flip()
-
-            if board:
-                board.insert_marker(marker_map["Rest"])
-
-            core.wait(REST_DURATION)
-
-            if "escape" in event.getKeys():
-                print("Escape pressed. Exiting...")
-                break
+        predictions_path = CALIBRATION_REPORT_PATH.with_name("mindrove_prediction_results.json")
+        predictions_path.write_text(
+            json.dumps(
+                {
+                    "session_id": session_id,
+                    "created_at": datetime.now().isoformat(timespec="seconds"),
+                    "prediction_accuracy": prediction_accuracy,
+                    "results": prediction_results,
+                    "labels": ID_TO_LABEL,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"Prediction report saved: {predictions_path}")
 
     except Exception as exc:
         print(f"\nAn error occurred during the experiment: {exc}")
@@ -377,7 +568,7 @@ def main():
             try:
                 data = board.get_board_data()
                 df = _build_labeled_dataframe(data, board)
-                save_session_outputs(df, board, session_id=session_id, experiment_sequence=experiment_sequence)
+                save_session_outputs(df, board, session_id=session_id, experiment_sequence=[])
                 board.stop_stream()
                 board.release_session()
                 print(f"Data saved successfully! Full shape: {df.shape}")
